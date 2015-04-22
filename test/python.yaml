@@ -1,0 +1,10 @@
+baseDir: python
+action: ["python", "test.py"]
+proxy:
+- port: 9090
+  forwardTo: 8080
+  type: http
+- port: 9091
+  forwardTo: 8080
+matchers:
+- patterns: ["*.py"]

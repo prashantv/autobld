@@ -1,0 +1,13 @@
+# no baseDir is specified, so baseDir should be the folder containing this file.
+action: ["./test.sh"]
+proxy:
+# HTTP port forward
+- port: 9090
+  forwardTo: 8080
+  type: http
+# TCP port forward (TCP is default)
+- port: 9091
+  forwardTo: 8080
+# When to reload the task
+matchers:
+- patterns: ["*.go", "*.sh"]

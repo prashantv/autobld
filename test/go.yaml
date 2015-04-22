@@ -1,0 +1,15 @@
+# The directory that commands should run from, relative to the config file.
+baseDir: go
+# The action and all arguments to the action.
+action: ["go", "run", "test.go"]
+# Proxy ports forward to a target port, but block if the task has not yet loaded
+# rather than failing immediately.
+proxy:
+- port: 9090
+  forwardTo: 8080
+  type: http
+- port: 9091
+  forwardTo: 8080
+# Matchers specifies the patterns and directories (relative to baseDir) to watch for changes.
+matchers:
+- patterns: ["*.go"]
