@@ -69,11 +69,14 @@ func (t *SM) Execute() (bool, error) {
 		if err := t.startTask(); err != nil {
 			return false, err
 		}
-	case t.PendingClose() && t.PastBuildBuffer() && t.Done.Read():
+	case t.PendingClose() && t.PastBuildBuffer():
+		if !t.Done.Read() {
+			t.closeTask()
+			return false, nil
+		}
+
 		t.clear()
 		return true, nil
-	case t.PendingClose() && !t.Done.Read():
-		t.closeTask()
 	}
 
 	return false, nil
@@ -98,10 +101,6 @@ func (t *SM) startTask() error {
 }
 
 func (t *SM) closeTask() {
-	if !t.PastBuildBuffer() {
-		return
-	}
-
 	var err error
 	if !t.PastKillTime() {
 		err = t.Task.Interrupt()
