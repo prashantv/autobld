@@ -43,7 +43,7 @@ type Matcher struct {
 
 	// ExcludeDir is the name of directories that are excluded from the watcher.
 	// By default, everything in defaultExcludeDirMap is excluded.
-	ExcludeDir []string `yaml:"excludeDir"`
+	ExcludeDirs []string `yaml:"excludeDirs"`
 
 	excludeDirMap map[string]bool
 }
@@ -96,11 +96,11 @@ func normalize(config *Config) (*Config, error) {
 	config.configsMap = make(map[string]*Matcher)
 
 	for i := range config.Matchers {
-		if len(config.Matchers[i].ExcludeDir) == 0 {
+		if len(config.Matchers[i].ExcludeDirs) == 0 {
 			config.Matchers[i].excludeDirMap = defaultExcludeDirMap
 		} else {
 			m := make(map[string]bool)
-			for _, dir := range argPatterns(config.Matchers[i].ExcludeDir) {
+			for _, dir := range argPatterns(config.Matchers[i].ExcludeDirs) {
 				m[dir] = true
 			}
 			config.Matchers[i].excludeDirMap = m

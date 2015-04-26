@@ -6,10 +6,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/prashantv/autobld/log"
+
 	"gopkg.in/fsnotify.v1"
 )
 
-func setupListener(c *Config, m *Matcher, watcher *fsnotify.Watcher) error {
+func setupListener(c *Config, m Matcher, watcher *fsnotify.Watcher) error {
 	if len(m.Dirs) == 0 {
 		m.Dirs = []string{""}
 	}
@@ -21,10 +23,12 @@ func setupListener(c *Config, m *Matcher, watcher *fsnotify.Watcher) error {
 				return fmt.Errorf("Walk directories failed: %v", err)
 			}
 			if m.excludeDirMap[filepath.Base(path)] {
+				log.VV("Skipping directory %v as it has been excluded", path)
 				return filepath.SkipDir
 			}
 			if info.IsDir() {
-				c.configsMap[filepath.Clean(path)] = m
+				log.VV("Add watch for directory %v", path)
+				c.configsMap[filepath.Clean(path)] = &m
 				watcher.Add(path)
 			}
 			return nil
@@ -52,7 +56,7 @@ func SetupWatcher(c *Config) (*fsnotify.Watcher, error) {
 	}
 
 	for _, m := range c.Matchers {
-		if err := setupListener(c, &m, watcher); err != nil {
+		if err := setupListener(c, m, watcher); err != nil {
 			return nil, wrapErr(err)
 		}
 	}
@@ -65,11 +69,11 @@ func IsMatch(c *Config, path string) bool {
 	if len(dir) == 0 {
 		dir = "./"
 	}
-	//	log.Printf("check for match %v in %+v", path, c.configsMap)
 	dc := c.configsMap[filepath.Clean(dir)]
 	if dc == nil {
 		return false
 	}
+	log.VV("Found updated file (%v) in watched directory, config: %+v", path, dc)
 
 	// If there are no patterns, then we treat it as a wildcard matching everything.
 	if len(dc.Patterns) == 0 {
