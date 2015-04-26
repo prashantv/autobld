@@ -99,7 +99,7 @@ func normalize(config *Config) (*Config, error) {
 			config.Matchers[i].excludeDirMap = defaultExcludeDirMap
 		} else {
 			m := make(map[string]bool)
-			for _, dir := range config.Matchers[i].ExcludeDir {
+			for _, dir := range argPatterns(config.Matchers[i].ExcludeDir) {
 				m[dir] = true
 			}
 			config.Matchers[i].excludeDirMap = m
