@@ -7,14 +7,14 @@ import (
 )
 
 const (
-	prefix = "[autobuild] "
+	prefix = "[autobld] "
 	flags  = slog.Ltime
 )
 
 var (
-	normal   = slog.New(os.Stdout, prefix, flags)
-	verbose1 = slog.New(os.Stdout, prefix, flags)
-	verbose2 = slog.New(os.Stdout, prefix, flags)
+	normal   = slog.New(os.Stdout, prefix+"L  ", flags)
+	verbose1 = slog.New(os.Stdout, prefix+"V  ", flags)
+	verbose2 = slog.New(os.Stdout, prefix+"VV ", flags)
 )
 
 // SetLevel sets the logging level. -1 is quiet, 0 is normal, anything higher is verbosity level.

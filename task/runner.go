@@ -88,6 +88,7 @@ func (t *SM) startTask() error {
 
 	go func() {
 		t.Task.process.Wait()
+		log.V("Task is no longer running")
 		t.Done.Write(true)
 		t.Reprocess <- struct{}{}
 		t.ReloadEnded <- struct{}{}
