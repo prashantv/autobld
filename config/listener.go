@@ -39,7 +39,7 @@ func setupListener(c *Config, m *Matcher, watcher *fsnotify.Watcher) error {
 func wrapErr(err error) error {
 	eMsg := err.Error()
 	if strings.Contains(eMsg, "too many open files") {
-		return fmt.Errorf("%v\nTo increase the limit for files that can be watched no OSX, run ulimit -n 512. The default limit is 256.", err)
+		return fmt.Errorf("%v\nTo increase the limit for files that can be watched no OSX, run ulimit -n 512. The default limit is 256", err)
 	}
 	return err
 }

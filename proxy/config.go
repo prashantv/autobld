@@ -18,6 +18,7 @@ type Config struct {
 	HTTPPath string `yaml:"httpPath"`
 }
 
+// Parse parses a proxy argument passed to through flags and returns a Config.
 func Parse(p string) (Config, error) {
 	pConfig := Config{}
 	parts := strings.Split(p, ":")

@@ -16,8 +16,8 @@ const (
 	killBufferTime = time.Second
 )
 
-// TaskSM is used to store state about the currently running task.
-type TaskSM struct {
+// SM is used to store state about the currently running task.
+type SM struct {
 	Task *Task
 	c    *config.Config
 
@@ -33,8 +33,8 @@ type TaskSM struct {
 }
 
 // NewSM returns the state maachine used to run tasks.
-func NewSM(c *config.Config) *TaskSM {
-	return &TaskSM{
+func NewSM(c *config.Config) *SM {
+	return &SM{
 		c:           c,
 		Reprocess:   make(chan struct{}),
 		ReloadEnded: make(chan struct{}),
@@ -42,28 +42,28 @@ func NewSM(c *config.Config) *TaskSM {
 }
 
 // Running returns whether the task is currently running.
-func (t *TaskSM) Running() bool {
+func (t *SM) Running() bool {
 	return t.Task != nil && !t.Done.Read()
 }
 
 // PendingClose returns whether there is a close request which hasn't yet been completed.
 // Once the task is closed, PendingClose will return false, and Running will return false.
-func (t *TaskSM) PendingClose() bool {
+func (t *SM) PendingClose() bool {
 	return !t.reloadRequest.IsZero()
 }
 
 // PastBuildBuffer returns whether we are past the buffer timeout.
-func (t *TaskSM) PastBuildBuffer() bool {
+func (t *SM) PastBuildBuffer() bool {
 	return t.reloadRequest.Add(buildBufferTime).Before(time.Now())
 }
 
 // PastKillTime returns whether we are past the kill buffer timeout.
-func (t *TaskSM) PastKillTime() bool {
+func (t *SM) PastKillTime() bool {
 	return t.reloadRequest.Add(buildBufferTime + killBufferTime).Before(time.Now())
 }
 
 // Execute runs the state machine, and returns whether it needs to be rerun
-func (t *TaskSM) Execute() (bool, error) {
+func (t *SM) Execute() (bool, error) {
 	switch {
 	case t.Task == nil:
 		if err := t.startTask(); err != nil {
@@ -79,7 +79,7 @@ func (t *TaskSM) Execute() (bool, error) {
 	return false, nil
 }
 
-func (t *TaskSM) startTask() error {
+func (t *SM) startTask() error {
 	var err error
 	t.Task, err = New(t.c.BaseDir, t.c.Action)
 	if err != nil {
@@ -96,7 +96,7 @@ func (t *TaskSM) startTask() error {
 	return nil
 }
 
-func (t *TaskSM) closeTask() {
+func (t *SM) closeTask() {
 	if !t.PastBuildBuffer() {
 		return
 	}
@@ -108,12 +108,12 @@ func (t *TaskSM) closeTask() {
 		err = t.Task.Kill()
 	}
 	if err != nil {
-		log.Log("Failed to stop task: %v", err)
+		log.L("Failed to stop task: %v", err)
 	}
 }
 
-// clear resets the TaskSM once a task has completed running.
-func (t *TaskSM) clear() {
+// clear resets the SM once a task has completed running.
+func (t *SM) clear() {
 	t.Task = nil
 	t.Done.Write(false)
 	t.reloadRequest = time.Time{}
@@ -121,14 +121,14 @@ func (t *TaskSM) clear() {
 
 // Reload will stop the task if it's running.
 // To make sure the task is closed, a goroutine is set up to reprocess every second.
-func (t *TaskSM) Reload() {
+func (t *SM) Reload() {
 	if t.PendingClose() {
 		log.Fatalf("Reload called while already waiting for a close")
 	}
 
 	t.reloadRequest = time.Now()
 	if !t.Running() {
-		log.Log("Change detected, starting task (task is no longer running)")
+		log.L("Change detected, starting task (task is no longer running)")
 		go func() {
 			time.Sleep(buildBufferTime)
 			t.Reprocess <- struct{}{}
@@ -136,12 +136,12 @@ func (t *TaskSM) Reload() {
 		return
 	}
 
-	log.Log("Change detected, restarting task")
+	log.L("Change detected, restarting task")
 	go t.reloadCheck()
 }
 
 // Close will try interrupt the task, and if it does not close in 500ms, it will kill it.
-func (t *TaskSM) Close() {
+func (t *SM) Close() {
 	if !t.Running() {
 		return
 	}
@@ -158,7 +158,7 @@ func (t *TaskSM) Close() {
 }
 
 // reloadCheck is a goroutine that triggers a reprocess every second till the reload has completed.
-func (t *TaskSM) reloadCheck() {
+func (t *SM) reloadCheck() {
 	for {
 		select {
 		case <-t.ReloadEnded:

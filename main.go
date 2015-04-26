@@ -75,5 +75,4 @@ func eventLoop(c *config.Config, errC <-chan error, signalC <-chan os.Signal, wa
 			// Nothing needs to be done, just the standard reprocess.
 		}
 	}
-	return nil
 }

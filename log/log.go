@@ -42,8 +42,8 @@ func log(logger *slog.Logger, format string, v ...interface{}) {
 	logger.Printf(format+"\n", v...)
 }
 
-// Log is used for normal level logs.
-func Log(format string, v ...interface{}) {
+// L is used for normal level logs.
+func L(format string, v ...interface{}) {
 	log(normal, format, v...)
 }
 

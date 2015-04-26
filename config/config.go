@@ -17,7 +17,7 @@ import (
 
 var defaultExcludeDirMap = map[string]bool{".git": true, ".hg": true}
 
-// ConfigFile is the struct defining the config file passed in to the file watcher.
+// Config is the struct defining the config file passed in to the file watcher.
 type Config struct {
 	// BaseDir is the base directory where configs are based.
 	// If this is not specified, the config file's location is used by default.
@@ -65,6 +65,7 @@ type opts struct {
 	} `positional-args:"yes" required:"yes"`
 }
 
+// Parse returns a configuration from either a configuration file or flags.
 func Parse() (*Config, error) {
 	opts := &opts{}
 	if _, err := goflags.Parse(opts); err != nil {

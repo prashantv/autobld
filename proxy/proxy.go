@@ -9,6 +9,7 @@ import (
 	"github.com/prashantv/autobld/sync"
 )
 
+// Start creates a goroutine for the given proxy Config.
 func Start(config Config, errC chan<- error) {
 	h := &tcpProxy{
 		config: config,
@@ -26,6 +27,8 @@ func Start(config Config, errC chan<- error) {
 	}
 }
 
+// TryConnect signals proxies that the task may have reloaded and may not be listening immmediately.
+// TODO: this does not work when you have multiple proxies.
 var TryConnect = sync.NewBool(true)
 
 func (h *tcpProxy) connectPort(withRetry bool) (net.Conn, error) {
@@ -46,6 +49,6 @@ func (h *tcpProxy) connectPort(withRetry bool) (net.Conn, error) {
 		errors = append(errors, err)
 		time.Sleep(retryInterval)
 	}
-	log.Log("connectWithRetry failed, first error: %v", errors[0:1])
+	log.L("connectWithRetry failed, first error: %v", errors[0:1])
 	return nil, errors[len(errors)-1]
 }
