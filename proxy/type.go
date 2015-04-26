@@ -2,6 +2,9 @@ package proxy
 
 import "strings"
 
+//go:generate stringer -type=Type
+type Type int
+
 const (
 	// Default type if not specified is TCP.
 	TCP Type = iota
@@ -18,18 +21,6 @@ func stringToType(p string) Type {
 		return HTTP
 	}
 	return UnknownType
-}
-
-// TODO: use stringer
-func (t Type) String() string {
-	switch t {
-	case TCP:
-		return "TCP"
-	case HTTP:
-		return "HTTP"
-	default:
-		return "Unknown"
-	}
 }
 
 func (t *Type) UnmarshalYAML(unmarshal func(interface{}) error) error {

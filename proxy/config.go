@@ -6,8 +6,6 @@ import (
 	"strings"
 )
 
-type Type int
-
 // Config is the configuration to forward a single port.
 type Config struct {
 	// Port is the port that the file watcher listens on.
