@@ -38,14 +38,14 @@ This sets up a HTTP proxy which will forward `:9090/[URL]` to `localhost:8080/te
 
 The full list of flags supported are:
 
-Short | Long       | Description 
----   | ---        | ---         
+Short | Long       | Description
+---   | ---        | ---
 -c     | --config     | Path to the configuration file.
 -v     | --verbose    | Verbose logging, can be specified multiple times
--q     | --quiet      | Quiet mode, disables all logging 
+-q     | --quiet      | Quiet mode, disables all logging
 -d     | --dir        | Directory to execute the commands in (by default, the current directory).
--m     | --match      | File patterns to match (by default, "*")
--x     | --excludeDir | Directories to exclude from watching (by default, "*.git", "*.hg")
+-m     | --match      | File patterns to match (by default, `*`)
+-x     | --excludeDir | Directories to exclude from watching (by default, `*.git`, `*.hg`)
 -p     | --proxy      | List of proxy ports to set up. See [Proxy](#proxies) for more information.
 
 
@@ -60,10 +60,48 @@ HTTP proxy ports act as a HTTP proxy, and will do things like use a correct `Hos
 ## Configuration file
 A YAML configuration file can be used using the `--config` (or `-c` for short) flag. When a configuration file is specified, configuration flags are ignored.
 
-Sample configuration files can be seen in the [test](test) directory.
+`autobld -c autobld.yaml`
 
-The YAML file 
+Sample configuration files can be seen in the [test](test) directory. Below is an explanation of the different YAML options:
+```yaml
+# The base directory used as the working directory for executing commands.
+# This directory can be absolute, or relative to the location of the configuration file.
+# If no directory is given, it defaults to the directory of the configuration file.
+baseDir: src
 
-For more complex configurations, it may make sense to set up a YAML config.
+# The action and arguments to run. This will be rerun if any changes are detected.
+action: ["go", "run", "main.go"]
 
-TODO: document yaml config here.
+# Proxy is the configuration for the proxies to set up. Multiple proxies can be specified.
+proxy:
+# If no type is given, the default proxy is a TCP proxy.
+- port: 9090
+  forwardTo: 8080
+# HTTP proxies can forward the request with a specified prefix.
+- port: 9091
+  forwardTo: 8080
+  type: http
+  httpPath: /server
+
+# Matchers specify the directories and file patterns within the directory to watch for changes.
+# Multiple matchers can be specified, allowing different patterns to be watched in different directories.
+# If no matchers are specified, all files in baseDir are watched.
+matchers:
+# If no directories are specified for a matcher, it defaults to baseDir.
+- patterns: ["*.go", "*.sh"]
+```
+
+Here is an example with more complex matchers:
+```yaml
+baseDir: src
+action: ["go", "run", "main.go"]
+matchers:
+# Reload on any changes to *.go files or *.py files in the test/server and test/library directory.
+# Ignore any directory named "frontend" within these directories.
+- dirs: ["server", "library"]
+  patterns: ["*.go", "*.py"]
+  excludeDirs: ["frontend", "client"]
+# Reload on any changes to the yaml files in the config folder
+- dirs: ["config"]
+  patterns: ["*.yaml"]
+```
