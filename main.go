@@ -35,7 +35,7 @@ func main() {
 
 	// Start all the proxy listeners.
 	for _, pc := range c.ProxyConfigs {
-		go proxy.Start(pc, errC)
+		proxy.Start(pc, errC)
 	}
 
 	if err := eventLoop(c, errC, signalC, watcher); err != nil {
@@ -49,7 +49,7 @@ func eventLoop(c *config.Config, errC <-chan error, signalC <-chan os.Signal, wa
 
 	for {
 		// Any change in the task state should make the proxy try reconnecting.
-		proxy.TryConnect.Write(true)
+		proxy.RetryConnect()
 
 		// Run the task state machine.
 		for rerun := true; rerun; {

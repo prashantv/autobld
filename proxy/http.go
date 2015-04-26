@@ -8,7 +8,7 @@ import (
 )
 
 type httpProxy struct {
-	tcpProxy
+	proxy
 	rp *httputil.ReverseProxy
 }
 
@@ -19,12 +19,11 @@ func (h *httpProxy) StartListen() {
 }
 
 func (h *httpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if TryConnect.Read() {
+	if h.tryConnect.Read() {
 		if _, err := h.connectPort(true /* withRetry */); err != nil {
 			writeErr(w, err)
 			return
 		}
-		TryConnect.Write(false)
 	}
 	h.rp.ServeHTTP(w, r)
 }

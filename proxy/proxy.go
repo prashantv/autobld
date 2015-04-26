@@ -9,41 +9,58 @@ import (
 	"github.com/prashantv/autobld/sync"
 )
 
+type proxy struct {
+	config     Config
+	errC       chan<- error
+	tryConnect *sync.Bool
+}
+
+var proxies []*proxy
+
 // Start creates a goroutine for the given proxy Config.
 func Start(config Config, errC chan<- error) {
-	h := &tcpProxy{
-		config: config,
-		errC:   errC,
+	p := &proxy{
+		config:     config,
+		errC:       errC,
+		tryConnect: sync.NewBool(true),
 	}
+	proxies = append(proxies, p)
 
 	switch config.Type {
 	case TCP:
-		h.StartListen()
+		tp := &tcpProxy{*p}
+		go tp.StartListen()
 	case HTTP:
-		hp := &httpProxy{tcpProxy: *h}
-		hp.StartListen()
+		hp := &httpProxy{proxy: *p}
+		go hp.StartListen()
 	default:
 		errC <- fmt.Errorf("unknown proxy type: %v", config.Type)
 	}
 }
 
-// TryConnect signals proxies that the task may have reloaded and may not be listening immmediately.
-// TODO: this does not work when you have multiple proxies.
-var TryConnect = sync.NewBool(true)
+// RetryConnect sets tryConnect on all the proxies.
+func RetryConnect() {
+	for _, p := range proxies {
+		p.tryConnect.Write(true)
+	}
+}
 
-func (h *tcpProxy) connectPort(withRetry bool) (net.Conn, error) {
+func (p *proxy) connectPort(withRetry bool) (net.Conn, error) {
 	const retryInterval = time.Millisecond * 200
 	const maxRetries = 300
 	numRetries := 10
 	if withRetry {
 		numRetries = maxRetries
 	}
-	addr := fmt.Sprintf("localhost:%v", h.config.ForwardTo)
+	addr := fmt.Sprintf("localhost:%v", p.config.ForwardTo)
 	var errors []error
 	for i := 0; i < numRetries; i++ {
 		conn, err := net.DialTimeout("tcp", addr, retryInterval)
 		if err == nil {
-			// connection is valid
+			// connection is valid, update tryConnect
+			if withRetry {
+				p.tryConnect.Write(false)
+			}
 			return conn, nil
 		}
 		errors = append(errors, err)

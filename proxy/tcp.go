@@ -7,8 +7,7 @@ import (
 )
 
 type tcpProxy struct {
-	config Config
-	errC   chan<- error
+	proxy
 }
 
 func (h *tcpProxy) StartListen() {
@@ -32,18 +31,14 @@ func (h *tcpProxy) Listen(listener net.Listener) {
 	}
 }
 func (h *tcpProxy) Handle(l net.Conn) {
-	retry := TryConnect.Read()
-	conn, err := h.connectPort(retry)
+	conn, err := h.connectPort(h.tryConnect.Read())
 	if err != nil {
 		h.errC <- err
 		return
 	}
-	if retry {
-		TryConnect.Write(false)
-	}
 
-	// Copy the data between the conn
-	done := make(chan struct{})
+	// Copy data between the connections, and block till at least one of them returns.
+	done := make(chan struct{}, 1)
 	go func() {
 		io.Copy(l, conn)
 		done <- struct{}{}
