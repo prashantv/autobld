@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/prashantv/autobld/log"
 	"github.com/prashantv/autobld/proxy"
@@ -55,6 +56,7 @@ type opts struct {
 	// If ConfigPath is set, then all arguments under == Config == are ignored.
 	ConfigPath string `long:"config" short:"c" description:"Config file path"`
 	// == Config ==
+	Patterns    []string `long:"match" short:"m" description:"File patterns to match" default:"*"`
 	ExcludeDirs []string `long:"excludeDir" short:"x" description:"Directory names to exclude" default:".git,.hg"`
 	BaseDir     string   `long:"dir" short:"d" description:"Directory to run commands in"`
 	Proxies     []string `long:"proxy" short:"p" description:"Proxy ports, specified as [protocol]:[sourcePort]:[targetPort]/[targetBaseDir]"`
@@ -107,6 +109,17 @@ func normalize(config *Config) (*Config, error) {
 	return config, nil
 }
 
+// allPatterns parases patterns specified on the command line.
+// The command line flag can be passed multiple times: e.g. -m *.py -m *.c
+// Or as a comma-separated list: -m *.py,*.c
+func argPatterns(patterns []string) []string {
+	var allPatterns []string
+	for _, p := range patterns {
+		allPatterns = append(allPatterns, strings.Split(p, ",")...)
+	}
+	return allPatterns
+}
+
 func parseArgs(opts *opts) (*Config, error) {
 	c := &Config{}
 	c.Action = opts.Args.Action
@@ -126,6 +139,10 @@ func parseArgs(opts *opts) (*Config, error) {
 		}
 		c.ProxyConfigs = append(c.ProxyConfigs, pConfig)
 	}
+
+	c.Matchers = []Matcher{{
+		Patterns: argPatterns(opts.Patterns),
+	}}
 	return normalize(c)
 }
 

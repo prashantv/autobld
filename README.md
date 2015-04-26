@@ -11,6 +11,11 @@ If all you want is to automatically restart the server for you when any change i
 autobld python test.py
 ```
 
+However, you may want to be more selective, and only restart the server when code changes (e.g. any python files). You can specify file patterns to watch by using the --match or -m flag.
+```
+autobld -m *.py python test.py
+```
+
 ## More cmplex use cases
 For more complex configurations, it may make sense to set up a YAML config.
 
