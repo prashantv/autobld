@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/prashantv/autobld/config"
@@ -33,18 +34,20 @@ func main() {
 	)
 	signal.Notify(signalC, syscall.SIGINT, syscall.SIGKILL)
 
-	// Start all the proxy listeners.
+	// Start all the proxy listeners, and ensure they block initially till the task starts.
+	var blockRequests sync.WaitGroup
+	blockRequests.Add(1)
 	for _, pc := range c.ProxyConfigs {
-		proxy.Start(pc, errC)
+		proxy.Start(pc, &blockRequests, errC)
 	}
 
-	if err := eventLoop(c, errC, signalC, watcher); err != nil {
+	if err := eventLoop(c, errC, signalC, &blockRequests, watcher); err != nil {
 		log.Fatalf("Error: %v", err)
 	}
 }
 
-func eventLoop(c *config.Config, errC <-chan error, signalC <-chan os.Signal, watcher *fsnotify.Watcher) error {
-	taskSM := task.NewSM(c)
+func eventLoop(c *config.Config, errC <-chan error, signalC <-chan os.Signal, blockRequests *sync.WaitGroup, watcher *fsnotify.Watcher) error {
+	taskSM := task.NewSM(c, blockRequests)
 	defer taskSM.Close()
 
 	for {

@@ -31,6 +31,7 @@ func (h *tcpProxy) Listen(listener net.Listener) {
 	}
 }
 func (h *tcpProxy) Handle(l net.Conn) {
+	h.blockRequests.Wait()
 	conn, err := h.connectPort(h.tryConnect.Read())
 	if err != nil {
 		h.errC <- err

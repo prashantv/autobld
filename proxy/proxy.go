@@ -3,26 +3,29 @@ package proxy
 import (
 	"fmt"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/prashantv/autobld/log"
-	"github.com/prashantv/autobld/sync"
+	"github.com/prashantv/autobld/syncv"
 )
 
 type proxy struct {
-	config     Config
-	errC       chan<- error
-	tryConnect *sync.Bool
+	config        Config
+	errC          chan<- error
+	tryConnect    *syncv.Bool
+	blockRequests *sync.WaitGroup
 }
 
 var proxies []*proxy
 
 // Start creates a goroutine for the given proxy Config.
-func Start(config Config, errC chan<- error) {
+func Start(config Config, blockRequests *sync.WaitGroup, errC chan<- error) {
 	p := &proxy{
-		config:     config,
-		errC:       errC,
-		tryConnect: sync.NewBool(true),
+		config:        config,
+		errC:          errC,
+		tryConnect:    syncv.NewBool(true),
+		blockRequests: blockRequests,
 	}
 	proxies = append(proxies, p)
 

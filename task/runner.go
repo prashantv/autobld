@@ -1,11 +1,12 @@
 package task
 
 import (
+	"sync"
 	"time"
 
 	"github.com/prashantv/autobld/config"
 	"github.com/prashantv/autobld/log"
-	"github.com/prashantv/autobld/sync"
+	"github.com/prashantv/autobld/syncv"
 )
 
 const (
@@ -23,27 +24,30 @@ type SM struct {
 
 	// reloadRequest is the time at which a Reload was requested.
 	reloadRequest time.Time
-	// Done is set to True once a task ends.
-	Done sync.Bool
+	// done is set to True once a task ends.
+	done syncv.Bool
+	// blockRequests is used to block all proxy port requests after a Reload is requested.
+	blockRequests *sync.WaitGroup
 
 	// Reprocess is the channel the caller waits on to reprocess the state machine.
 	Reprocess chan struct{}
-	// ReloadEnded is written to when a Reload is complete (eg the task has ended).
-	ReloadEnded chan struct{}
+	// reloadEnded is written to when a Reload is complete (eg the task has ended).
+	reloadEnded chan struct{}
 }
 
 // NewSM returns the state maachine used to run tasks.
-func NewSM(c *config.Config) *SM {
+func NewSM(c *config.Config, blockRequests *sync.WaitGroup) *SM {
 	return &SM{
-		c:           c,
-		Reprocess:   make(chan struct{}),
-		ReloadEnded: make(chan struct{}),
+		c:             c,
+		blockRequests: blockRequests,
+		Reprocess:     make(chan struct{}),
+		reloadEnded:   make(chan struct{}),
 	}
 }
 
 // Running returns whether the task is currently running.
 func (t *SM) Running() bool {
-	return t.Task != nil && !t.Done.Read()
+	return t.Task != nil && !t.done.Read()
 }
 
 // PendingClose returns whether there is a close request which hasn't yet been completed.
@@ -70,7 +74,7 @@ func (t *SM) Execute() (bool, error) {
 			return false, err
 		}
 	case t.PendingClose() && t.PastBuildBuffer():
-		if !t.Done.Read() {
+		if !t.done.Read() {
 			t.closeTask()
 			return false, nil
 		}
@@ -89,12 +93,14 @@ func (t *SM) startTask() error {
 		return err
 	}
 
+	t.blockRequests.Done()
+
 	go func() {
 		t.Task.process.Wait()
 		log.V("Task is no longer running")
-		t.Done.Write(true)
+		t.done.Write(true)
 		t.Reprocess <- struct{}{}
-		t.ReloadEnded <- struct{}{}
+		t.reloadEnded <- struct{}{}
 	}()
 
 	return nil
@@ -115,7 +121,7 @@ func (t *SM) closeTask() {
 // clear resets the SM once a task has completed running.
 func (t *SM) clear() {
 	t.Task = nil
-	t.Done.Write(false)
+	t.done.Write(false)
 	t.reloadRequest = time.Time{}
 }
 
@@ -126,6 +132,7 @@ func (t *SM) Reload() {
 		log.Fatalf("Reload called while already waiting for a close")
 	}
 
+	t.blockRequests.Add(1)
 	t.reloadRequest = time.Now()
 	if !t.Running() {
 		log.L("Change detected, starting task (task is no longer running)")
@@ -150,7 +157,7 @@ func (t *SM) Close() {
 	select {
 	case <-t.Reprocess:
 		return
-	case <-t.ReloadEnded:
+	case <-t.reloadEnded:
 		return
 	case <-time.After(500 * time.Millisecond):
 		t.Task.Kill()
@@ -161,7 +168,7 @@ func (t *SM) Close() {
 func (t *SM) reloadCheck() {
 	for {
 		select {
-		case <-t.ReloadEnded:
+		case <-t.reloadEnded:
 			return
 		case <-time.After(time.Second):
 			t.Reprocess <- struct{}{}

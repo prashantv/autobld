@@ -19,6 +19,7 @@ func (h *httpProxy) StartListen() {
 }
 
 func (h *httpProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.blockRequests.Wait()
 	if h.tryConnect.Read() {
 		if _, err := h.connectPort(true /* withRetry */); err != nil {
 			writeErr(w, err)
