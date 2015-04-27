@@ -47,7 +47,7 @@ Short | Long       | Description
 -p     | --proxy      | List of proxy ports to set up. See [Proxy](#proxies) for more information.
 
 ### Timeouts
-Timeouts described in [Timeouts](#timeouts) can be controlled using the following flags:
+Timeouts described in [Timeouts](#timeouts-1) can be controlled using the following flags:
 
 Flag | Description
 --- | ---
@@ -123,7 +123,7 @@ matchers:
 
 ### Timeouts
 
-[Timeouts](#timeouts) can be also specified in the configuration file:
+[Timeouts](#timeouts-1) can be also specified in the configuration file:
 ```yaml
 action: ["go", "run", "main.go"]
 changeTimeout: 3s
