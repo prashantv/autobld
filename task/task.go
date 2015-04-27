@@ -18,7 +18,9 @@ type Task struct {
 
 // New starts the binary specified in args, and returns a Task for the process.
 func New(baseDir string, args []string) (*Task, error) {
-	log.V("Starting task: %v", args)
+	if !log.V("Starting task: %v", args) {
+		log.L("Starting task")
+	}
 	cmd := exec.Command(args[0], args[1:]...)
 
 	// Use a separate process group so we can kill the whole group.

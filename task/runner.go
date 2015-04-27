@@ -9,14 +9,6 @@ import (
 	"github.com/prashantv/autobld/syncv"
 )
 
-const (
-	// buildBufferTime is the buffer time after a change is detected before we Reload the task.
-	buildBufferTime = time.Second
-
-	// killBufferTime is how long after a close request to wait before killing the task.
-	killBufferTime = time.Second
-)
-
 // SM is used to store state about the currently running task.
 type SM struct {
 	Task *Task
@@ -56,14 +48,14 @@ func (t *SM) PendingClose() bool {
 	return !t.reloadRequest.IsZero()
 }
 
-// PastBuildBuffer returns whether we are past the buffer timeout.
-func (t *SM) PastBuildBuffer() bool {
-	return t.reloadRequest.Add(buildBufferTime).Before(time.Now())
+// PastChangeTime returns whether we are past the buffer timeout.
+func (t *SM) PastChangeTime() bool {
+	return t.reloadRequest.Add(t.c.ChangeTimeout).Before(time.Now())
 }
 
 // PastKillTime returns whether we are past the kill buffer timeout.
 func (t *SM) PastKillTime() bool {
-	return t.reloadRequest.Add(buildBufferTime + killBufferTime).Before(time.Now())
+	return t.reloadRequest.Add(t.c.ChangeTimeout + t.c.KillTimeout).Before(time.Now())
 }
 
 // Execute runs the state machine, and returns whether it needs to be rerun
@@ -73,7 +65,7 @@ func (t *SM) Execute() (bool, error) {
 		if err := t.startTask(); err != nil {
 			return false, err
 		}
-	case t.PendingClose() && t.PastBuildBuffer():
+	case t.PendingClose() && t.PastChangeTime():
 		if !t.done.Read() {
 			t.closeTask()
 			return false, nil
@@ -135,15 +127,15 @@ func (t *SM) Reload() {
 	t.blockRequests.Add(1)
 	t.reloadRequest = time.Now()
 	if !t.Running() {
-		log.L("Change detected, starting task (task is no longer running)")
+		log.L("Change detected, will start task in %v", t.c.ChangeTimeout)
 		go func() {
-			time.Sleep(buildBufferTime)
+			time.Sleep(t.c.ChangeTimeout)
 			t.Reprocess <- struct{}{}
 		}()
 		return
 	}
 
-	log.L("Change detected, restarting task")
+	log.L("Change detected, will restart task in %v", t.c.ChangeTimeout)
 	go t.reloadCheck()
 }
 
@@ -159,18 +151,18 @@ func (t *SM) Close() {
 		return
 	case <-t.reloadEnded:
 		return
-	case <-time.After(500 * time.Millisecond):
+	case <-time.After(t.c.KillTimeout):
 		t.Task.Kill()
 	}
 }
 
-// reloadCheck is a goroutine that triggers a reprocess every second till the reload has completed.
+// reloadCheck is a goroutine that triggers a reprocess till the reload has completed.
 func (t *SM) reloadCheck() {
 	for {
 		select {
 		case <-t.reloadEnded:
 			return
-		case <-time.After(time.Second):
+		case <-time.After(100 * time.Millisecond):
 			t.Reprocess <- struct{}{}
 		}
 	}

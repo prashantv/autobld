@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/prashantv/autobld/log"
 	"github.com/prashantv/autobld/proxy"
@@ -16,6 +17,11 @@ import (
 )
 
 var defaultExcludeDirMap = map[string]bool{".git": true, ".hg": true}
+
+const (
+	defaultChangeTimeout = time.Second
+	defaultKillTimeout   = time.Second
+)
 
 // Config is the struct defining the config file passed in to the file watcher.
 type Config struct {
@@ -32,6 +38,10 @@ type Config struct {
 
 	// Action is the command to run to compile + restart the server.
 	Action []string `yaml:"action"`
+
+	// Timeout configurations
+	ChangeTimeout time.Duration `yaml:"changeTimeout"`
+	KillTimeout   time.Duration `yaml:"killTimeout"`
 
 	configsMap map[string]*Matcher
 }
@@ -63,6 +73,10 @@ type opts struct {
 	Args        struct {
 		Action []string `positional-arg-name:"Action and arguments" description:"Action and arguments to run"`
 	} `positional-args:"yes" required:"yes"`
+
+	// Timeout configurations
+	ChangeTimeout time.Duration `long:"changeTimeout" description:"Time to wait after a change is detected before reloading the task"`
+	KillTimeout   time.Duration `long:"killTimeout" description:"Time to wait after Ctrl-C before killing the task"`
 }
 
 // Parse returns a configuration from either a configuration file or flags.
@@ -106,6 +120,12 @@ func normalize(config *Config) (*Config, error) {
 			config.Matchers[i].excludeDirMap = m
 		}
 	}
+	if config.ChangeTimeout == 0 {
+		config.ChangeTimeout = defaultChangeTimeout
+	}
+	if config.KillTimeout == 0 {
+		config.KillTimeout = defaultKillTimeout
+	}
 	log.V("Initializing with config: %+v", config)
 	return config, nil
 }
@@ -140,10 +160,11 @@ func parseArgs(opts *opts) (*Config, error) {
 		}
 		c.ProxyConfigs = append(c.ProxyConfigs, pConfig)
 	}
-
 	c.Matchers = []Matcher{{
 		Patterns: argPatterns(opts.Patterns),
 	}}
+	c.ChangeTimeout = opts.ChangeTimeout
+	c.KillTimeout = opts.KillTimeout
 	return normalize(c)
 }
 

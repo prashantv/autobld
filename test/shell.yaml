@@ -11,3 +11,4 @@ proxy:
 # When to reload the task
 matchers:
 - patterns: ["*.go", "*.sh"]
+changeTimeout: 2s

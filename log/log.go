@@ -31,30 +31,31 @@ func SetLevel(level int) {
 	}
 }
 
-func log(logger *slog.Logger, format string, v ...interface{}) {
+func log(logger *slog.Logger, format string, v ...interface{}) bool {
 	if logger == nil {
-		return
+		return false
 	}
 	if len(v) == 0 {
 		logger.Println(format)
-		return
+		return true
 	}
 	logger.Printf(format+"\n", v...)
+	return true
 }
 
 // L is used for normal level logs.
-func L(format string, v ...interface{}) {
-	log(normal, format, v...)
+func L(format string, v ...interface{}) bool {
+	return log(normal, format, v...)
 }
 
 // V is used for verbose logs.
-func V(format string, v ...interface{}) {
-	log(verbose1, format, v...)
+func V(format string, v ...interface{}) bool {
+	return log(verbose1, format, v...)
 }
 
 // VV is used for very verbose logs.
-func VV(format string, v ...interface{}) {
-	log(verbose2, format, v...)
+func VV(format string, v ...interface{}) bool {
+	return log(verbose2, format, v...)
 }
 
 // Fatalf is used to log and close the application.

@@ -36,8 +36,6 @@ This sets up a HTTP proxy which will forward `:9090/[URL]` to `localhost:8080/te
 
 ## Configuration Flags
 
-The full list of flags supported are:
-
 Short | Long       | Description
 ---   | ---        | ---
 -c     | --config     | Path to the configuration file.
@@ -48,6 +46,13 @@ Short | Long       | Description
 -x     | --excludeDir | Directories to exclude from watching (by default, `*.git`, `*.hg`)
 -p     | --proxy      | List of proxy ports to set up. See [Proxy](#proxies) for more information.
 
+### Timeouts
+Timeouts described in [Timeouts](#timeouts) can be controlled using the following flags:
+
+Flag | Description
+--- | ---
+--changeTimeout | Change timeout
+--killTimeout | Kill timeout
 
 ## Proxies
 
@@ -56,6 +61,16 @@ Proxy ports can be used to avoid connections failing while the server is being r
 TCP proxy ports do not modify the request in any way, and can be used for any TCP protocol.
 
 HTTP proxy ports act as a HTTP proxy, and will do things like use a correct `Host` header, and allow for custom path prefixes. E.g. if you set up a proxy using `-p http:9090:8080/server`, then a request made to `localhost:9090/test` will actually be forwarded to `localhost:8080/server/test`.
+
+## Timeouts
+There are also some more advanced timeout configurations:
+
+**Change timeout**: The amount of time to wait after a change is detected before restarting the task. This is used to avoid restarting the task multiple times of there are many files saved within a short period. The default change timeout is 1 second.
+
+**Kill timeout**: The amount of time to wait after sending Ctrl-C before using a Kill signal to kill a task. The default kill timeout is 1 second.
+
+Timeouts are specified in the format used by [ParseDuration](http://golang.org/pkg/time/#ParseDuration), which supports values such as `1s` for 1 second, or `250ms` for 250 milliseconds.
+
 
 ## Configuration file
 A YAML configuration file can be used using the `--config` (or `-c` for short) flag. When a configuration file is specified, configuration flags are ignored.
@@ -104,4 +119,13 @@ matchers:
 # Reload on any changes to the yaml files in the config folder
 - dirs: ["config"]
   patterns: ["*.yaml"]
+```
+
+### Timeouts
+
+[Timeouts](#timeouts) can be also specified in the configuration file:
+```yaml
+action: ["go", "run", "main.go"]
+changeTimeout: 3s
+killTimeout: 5s
 ```
