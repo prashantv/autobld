@@ -2,6 +2,7 @@ package task
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"syscall"
@@ -16,6 +17,16 @@ type Task struct {
 	pgid int
 }
 
+// underlyingReader is used to force a separate file to be used to connect
+// Stdin, as the same file cannot be shared when using a separate process group.
+type underlyingReader struct {
+	rdr io.Reader
+}
+
+func (u underlyingReader) Read(p []byte) (n int, err error) {
+	return u.rdr.Read(p)
+}
+
 // New starts the binary specified in args, and returns a Task for the process.
 func New(baseDir string, args []string) (*Task, error) {
 	if !log.V("Starting task: %v", args) {
@@ -28,6 +39,7 @@ func New(baseDir string, args []string) (*Task, error) {
 	cmd.Dir = baseDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Stdin = underlyingReader{os.Stdin}
 
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("error starting command: %v", err)
