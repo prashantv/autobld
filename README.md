@@ -5,7 +5,12 @@ autobld can also set up a proxy for your server's listening ports that will bloc
 
 ## Quick Start
 
-If all you want is to automatically restart the server for you when any change is made to any file in the current directory, then do:
+To install, [download Go](https://golang.org/doc/install) and install autobld using:
+```
+go get -u github.com/prashantv/autobld
+```
+
+If all you want is to automatically restart the server (e.g. `python test.py`) when any change is made to any file in the current directory, then do:
 
 ```
 autobld python test.py
