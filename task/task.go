@@ -14,16 +14,8 @@ type Task struct {
 	process *os.Process
 	// pgid is the process group ID, used when killing the task.
 	pgid int
-}
-
-// underlyingReader is used to force a separate file to be used to connect
-// Stdin, as the same file cannot be shared when using a separate process group.
-type underlyingReader struct {
-	rdr io.Reader
-}
-
-func (u underlyingReader) Read(p []byte) (n int, err error) {
-	return u.rdr.Read(p)
+	// stdinPipe is a pipe to write Stdin to.
+	stdinPipe io.WriteCloser
 }
 
 func getOutFile(confFile string, defaultFile *os.File) (*os.File, error) {
@@ -50,7 +42,10 @@ func New(baseDir string, outFile string, errFile string, args []string) (*Task, 
 	if cmd.Stderr, err = getOutFile(errFile, os.Stderr); err != nil {
 		return nil, err
 	}
-	cmd.Stdin = underlyingReader{os.Stdin}
+	stdinPipe, err := cmd.StdinPipe()
+	if err != nil {
+		return nil, err
+	}
 
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("error starting command: %v", err)
@@ -63,7 +58,8 @@ func New(baseDir string, outFile string, errFile string, args []string) (*Task, 
 	}
 
 	return &Task{
-		process: cmd.Process,
-		pgid:    pgid,
+		process:   cmd.Process,
+		pgid:      pgid,
+		stdinPipe: stdinPipe,
 	}, nil
 }

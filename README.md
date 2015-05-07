@@ -20,7 +20,7 @@ autobld python test.py
 
 However, you may want to be more selective, and only restart the server when code changes (e.g. any python files). You can specify file patterns to watch by using the `--match` or `-m` flag.
 ```
-autobld -m *.py python test.py
+autobld -m "*.py" python test.py
 ```
 
 ### Proxy ports
@@ -29,12 +29,12 @@ autobld can set up a proxy which blocks while the server is reloading. You can s
 
 For example, if you have a server that listens on port 8080, you can set up a proxy port on 9090 that forwards to 8080:
 ```
-autobld -m *.py -p 9090:8080 python test.py
+autobld -m "*.py" -p 9090:8080 python test.py
 ```
 
 You can also use a HTTP proxy instead, which also allows forwarding to a custom path:
 ```
-autobld -m *.py -p http:9090:8080/server python test.py
+autobld -m "*.py" -p http:9090:8080/server python test.py
 ```
 
 This sets up a HTTP proxy which will forward `:9090/[URL]` to `localhost:8080/test/[URL]`. For more information, see the [Proxies](#proxies) section.

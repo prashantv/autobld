@@ -87,12 +87,15 @@ func (t *SM) startTask() error {
 
 	t.blockRequests.Done()
 
+	stdinCloser := make(chan struct{})
+	go copyStdin(t.Task.stdinPipe, stdinCloser)
 	go func() {
 		t.Task.process.Wait()
 		log.V("Task is no longer running")
 		t.done.Write(true)
 		t.Reprocess <- struct{}{}
 		t.reloadEnded <- struct{}{}
+		stdinCloser <- struct{}{}
 	}()
 
 	return nil
