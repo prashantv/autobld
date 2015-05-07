@@ -39,6 +39,12 @@ type Config struct {
 	// Action is the command to run to compile + restart the server.
 	Action []string `yaml:"action"`
 
+	// StdOut is the file that the task's STDOUT is written to.
+	StdOut string `yaml:"outFile"`
+
+	// StdErr is the file that the task's STDERR is written to.
+	StdErr string `yaml:"errFile"`
+
 	// Timeout configurations
 	ChangeTimeout time.Duration `yaml:"changeTimeout"`
 	KillTimeout   time.Duration `yaml:"killTimeout"`
@@ -70,6 +76,8 @@ type opts struct {
 	ExcludeDirs []string `long:"excludeDir" short:"x" description:"Directory names to exclude" default:".git,.hg"`
 	BaseDir     string   `long:"dir" short:"d" description:"Directory to run commands in"`
 	Proxies     []string `long:"proxy" short:"p" description:"Proxy ports, specified as [protocol]:[sourcePort]:[targetPort]/[targetBaseDir]"`
+	OutFile     string   `long:"outFile" short:"o" description:"File to redirect task's STDOUT to."`
+	ErrFile     string   `long:"errFile" description:"File to redirect task's STDERR to."`
 	Args        struct {
 		Action []string `positional-arg-name:"Action and arguments" description:"Action and arguments to run"`
 	} `positional-args:"yes" required:"yes"`
@@ -165,6 +173,8 @@ func parseArgs(opts *opts) (*Config, error) {
 	}}
 	c.ChangeTimeout = opts.ChangeTimeout
 	c.KillTimeout = opts.KillTimeout
+	c.StdOut = opts.OutFile
+	c.StdErr = opts.ErrFile
 	return normalize(c)
 }
 

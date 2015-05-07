@@ -26,8 +26,15 @@ func (u underlyingReader) Read(p []byte) (n int, err error) {
 	return u.rdr.Read(p)
 }
 
+func getOutFile(confFile string, defaultFile *os.File) (*os.File, error) {
+	if confFile == "" {
+		return defaultFile, nil
+	}
+	return os.Create(confFile)
+}
+
 // New starts the binary specified in args, and returns a Task for the process.
-func New(baseDir string, args []string) (*Task, error) {
+func New(baseDir string, outFile string, errFile string, args []string) (*Task, error) {
 	if !log.V("Starting task: %v", args) {
 		log.L("Starting task")
 	}
@@ -36,8 +43,13 @@ func New(baseDir string, args []string) (*Task, error) {
 	// Use a separate process group so we can kill the whole group.
 	cmd.Dir = baseDir
 	cmd.SysProcAttr = getSysProcAttrs()
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	var err error
+	if cmd.Stdout, err = getOutFile(outFile, os.Stdout); err != nil {
+		return nil, err
+	}
+	if cmd.Stderr, err = getOutFile(errFile, os.Stderr); err != nil {
+		return nil, err
+	}
 	cmd.Stdin = underlyingReader{os.Stdin}
 
 	if err := cmd.Start(); err != nil {

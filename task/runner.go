@@ -80,7 +80,7 @@ func (t *SM) Execute() (bool, error) {
 
 func (t *SM) startTask() error {
 	var err error
-	t.Task, err = New(t.c.BaseDir, t.c.Action)
+	t.Task, err = New(t.c.BaseDir, t.c.StdOut, t.c.StdErr, t.c.Action)
 	if err != nil {
 		return err
 	}

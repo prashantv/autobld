@@ -50,6 +50,8 @@ Short | Long       | Description
 -m     | --match      | File patterns to match (by default, `*`)
 -x     | --excludeDir | Directories to exclude from watching (by default, `*.git`, `*.hg`)
 -p     | --proxy      | List of proxy ports to set up. See [Proxy](#proxies) for more information.
+-o     | --outFile    | Filename to redirect task's output to.
+       | --errFile    | Filename to redirect task's error output to.
 
 ### Timeouts
 Timeouts described in [Timeouts](#timeouts-1) can be controlled using the following flags:
