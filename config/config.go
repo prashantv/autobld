@@ -168,8 +168,13 @@ func parseArgs(opts *opts) (*Config, error) {
 		}
 		c.ProxyConfigs = append(c.ProxyConfigs, pConfig)
 	}
+	excludeDirs := append([]string(nil), opts.ExcludeDirs...)
+	for dir := range defaultExcludeDirMap {
+		excludeDirs = append(excludeDirs, dir)
+	}
 	c.Matchers = []Matcher{{
-		Patterns: argPatterns(opts.Patterns),
+		Patterns:    argPatterns(opts.Patterns),
+		ExcludeDirs: excludeDirs,
 	}}
 	c.ChangeTimeout = opts.ChangeTimeout
 	c.KillTimeout = opts.KillTimeout
