@@ -28,7 +28,7 @@ func getPgID(cmd *exec.Cmd) (int, error) {
 func (t *Task) Interrupt() error {
 	log.VV("Requested Ctrl-Break on task")
 	r, _, err := procGenerateConsoleCtrlEvent.Call(syscall.CTRL_BREAK_EVENT, uintptr(t.pgid))
-	if r != 0 {
+	if r == 0 {
 		return fmt.Errorf("r = %v err: %v", r, err)
 	}
 	return nil
