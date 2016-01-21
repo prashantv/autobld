@@ -91,6 +91,11 @@ type opts struct {
 func Parse() (*Config, error) {
 	opts := &opts{}
 	if _, err := goflags.Parse(opts); err != nil {
+		if err, ok := err.(*goflags.Error); ok && err.Type == goflags.ErrHelp {
+			// Help has been printed. We can exit now.
+			os.Exit(64)
+			return nil, nil
+		}
 		return nil, err
 	}
 	if opts.Quiet {
